@@ -27,6 +27,7 @@
 #include <string.h>
 #include <unistd.h>
 
+// typedef uv_loop_s
 int uv_loop_init(uv_loop_t* loop) {
   uv__loop_internal_fields_t* lfields;
   void* saved_data;
