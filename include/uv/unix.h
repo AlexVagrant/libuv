@@ -91,7 +91,9 @@ typedef void (*uv__io_cb)(struct uv_loop_s* loop,
                           unsigned int events);
 typedef struct uv__io_s uv__io_t;
 
+// IO观察者
 struct uv__io_s {
+  // 事件触发回调
   uv__io_cb cb;
   void* pending_queue[2];
   void* watcher_queue[2];

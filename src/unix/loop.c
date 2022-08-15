@@ -34,8 +34,12 @@ int uv_loop_init(uv_loop_t* loop) {
   int err;
 
 
-  saved_data = loop->data;
+  saved_data = loop->data; // 用户自定义数据 saved_data 是不是相当于临时变量用来存在 loop->data
+  // void *memset(void *str, int c, size_t n) 
+  // 复制字符c 到参数 str 所指向的字符串的前 n 个字符。
+  printf("%d", sizeof(*loop));
   memset(loop, 0, sizeof(*loop));
+
   loop->data = saved_data;
 
   lfields = (uv__loop_internal_fields_t*) uv__calloc(1, sizeof(*lfields));
