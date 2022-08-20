@@ -27,17 +27,40 @@
 #include <string.h>
 #include <unistd.h>
 
+// typedef uv_loop_s  /uv_loop_t* 指针 loop
 int uv_loop_init(uv_loop_t* loop) {
+  // int flags
   uv__loop_internal_fields_t* lfields;
   void* saved_data;
   int err;
 
+  saved_data = loop->data; // 用户自定义数据 saved_data 是不是相当于临时变量用来存在 loop->data
 
-  saved_data = loop->data;
+  // void *memset(void *str, int c, size_t n) 
+  // 复制字符c 到参数 str 所指向的字符串的前 n 个字符。
+  // 下面是用于初始化结构体
   memset(loop, 0, sizeof(*loop));
-  loop->data = saved_data;
+  /**
+    struct banana {
+      float ripeness;
+      char *peel_color;
+      int grams;
+    };
+
+    struct banana b;
+
+    memset(&b, 0, sizeof b);
+
+    b.ripeness == 0.0;     // True
+    b.peel_color == NULL;  // True
+    b.grams == 0;          // True
+
+    上面示例，将 Struct banana 的实例 b 的所有属性都初始化为0。
+   */
+  loop->data = saved_data; // 用户数据保留不进行初始化
 
   lfields = (uv__loop_internal_fields_t*) uv__calloc(1, sizeof(*lfields));
+
   if (lfields == NULL)
     return UV_ENOMEM;
   loop->internal_fields = lfields;

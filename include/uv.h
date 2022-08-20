@@ -848,7 +848,9 @@ UV_EXTERN int uv_check_stop(uv_check_t* check);
 
 
 struct uv_idle_s {
+  // 事件处理字段
   UV_HANDLE_FIELDS
+
   UV_IDLE_PRIVATE_FIELDS
 };
 
