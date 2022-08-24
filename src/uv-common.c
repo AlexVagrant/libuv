@@ -41,6 +41,7 @@
 typedef struct {
   uv_malloc_func local_malloc;
   uv_realloc_func local_realloc;
+  // typedef void* (*uv_calloc_func)(size_t count, size_t size);
   uv_calloc_func local_calloc;
   uv_free_func local_free;
 } uv__allocator_t;
