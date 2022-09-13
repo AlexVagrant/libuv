@@ -19,6 +19,14 @@
 #include <stddef.h>
 
 typedef void *QUEUE[2];
+/**
+ * QUEUE_NEXT(q)       (*(QUEUE **) &((*(q))[0]))
+ * &((*(q))[0]) 返回的是队列第一项的值的地址
+ * 这里的加号没有运算符的含义
+ * (*(q))[0] = *(*(p+0)+0)
+ * void **
+ * (QUEUE **) 强制转换类型
+ */
 
 /* Private macros. */
 #define QUEUE_NEXT(q)       (*(QUEUE **) &((*(q))[0]))
@@ -27,6 +35,7 @@ typedef void *QUEUE[2];
 #define QUEUE_NEXT_PREV(q)  (QUEUE_PREV(QUEUE_NEXT(q)))
 
 /* Public macros. */
+// QUEUE_DATA(ptr, type, field)宏被用于从指向内嵌成员的指针获得外包的结构的指针
 #define QUEUE_DATA(ptr, type, field)                                          \
   ((type *) ((char *) (ptr) - offsetof(type, field)))
 

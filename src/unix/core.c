@@ -115,6 +115,7 @@ uint64_t uv_hrtime(void) {
 void uv_close(uv_handle_t* handle, uv_close_cb close_cb) {
   assert(!uv__is_closing(handle));
 
+  // 正在关闭但是没有执行
   handle->flags |= UV_HANDLE_CLOSING;
   handle->close_cb = close_cb;
 
@@ -378,18 +379,39 @@ int uv_loop_alive(const uv_loop_t* loop) {
   return uv__loop_alive(loop);
 }
 
-
+/**
+   ┌───────────────────────────┐
+┌─>│           timers          │
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+│  │     pending callbacks     │
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+│  │       idle, prepare       │
+│  └─────────────┬─────────────┘      ┌───────────────┐
+│  ┌─────────────┴─────────────┐      │   incoming:   │
+│  │           poll            │<─────┤  connections, │
+│  └─────────────┬─────────────┘      │   data, etc.  │
+│  ┌─────────────┴─────────────┐      └───────────────┘
+│  │           check           │
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+└──┤      close callbacks      │
+   └───────────────────────────┘
+*/
+// uv_run_mode enum
 int uv_run(uv_loop_t* loop, uv_run_mode mode) {
   int timeout;
   int r;
   int can_sleep;
 
   r = uv__loop_alive(loop);
-  if (!r)
+  if (!r) // 更新loop时间
     uv__update_time(loop);
 
   while (r != 0 && loop->stop_flag == 0) {
     uv__update_time(loop);
+    // 执行超时回调
     uv__run_timers(loop);
 
     can_sleep =
@@ -400,9 +422,11 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
     uv__run_prepare(loop);
 
     timeout = 0;
+    // UV_RUN_ONCE模式并且 pending_queue 和 idle_handles 为空, 或者 默认模式
     if ((mode == UV_RUN_ONCE && can_sleep) || mode == UV_RUN_DEFAULT)
+      // 阻塞poll io
       timeout = uv__backend_timeout(loop);
-
+    // timeout 是 epoll_wait 的超时时间
     uv__io_poll(loop, timeout);
 
     /* Process immediate callbacks (e.g. write_cb) a small fixed number of
@@ -420,6 +444,7 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
     uv__run_check(loop);
     uv__run_closing_handles(loop);
 
+    // 还有一次执行超时回调的机会
     if (mode == UV_RUN_ONCE) {
       /* UV_RUN_ONCE implies forward progress: at least one callback must have
        * been invoked when it returns. uv__io_poll() can return without doing
@@ -876,7 +901,9 @@ void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
   assert(w->fd >= 0);
   assert(w->fd < INT_MAX);
 
+  // 设置当前感兴趣的事件
   w->pevents |= events;
+  // 可能需要扩容
   maybe_resize(loop, w->fd + 1);
 
 #if !defined(__sun)
@@ -911,8 +938,11 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
   if ((unsigned) w->fd >= loop->nwatchers)
     return;
 
+  // 清楚之前注册的事件，保存在prevents中，表示当前感兴趣的事件
+  // 这里进行位运算符操作 & ~
   w->pevents &= ~events;
 
+  // 对所有事件都不感兴趣了
   if (w->pevents == 0) {
     QUEUE_REMOVE(&w->watcher_queue);
     QUEUE_INIT(&w->watcher_queue);
@@ -924,6 +954,7 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
       loop->nfds--;
     }
   }
+  // 之前还没有插入io观察者队列中的事件进行插入，等待poll io 处理
   else if (QUEUE_EMPTY(&w->watcher_queue))
     QUEUE_INSERT_TAIL(&loop->watcher_queue, &w->watcher_queue);
 }

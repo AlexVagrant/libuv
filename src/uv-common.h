@@ -265,8 +265,12 @@ void uv__threadpool_cleanup(void);
   (h->shutdown_req != NULL)
 #endif
 
+// handle 有 REF 和 ACTIVE 两个状态
+// 当一个handle调用**_init函数时，会打上REF标记
+// 当handled调用**_start函数时，会被打上ACTIVE,并切计数加1
 #define uv__handle_start(h)                                                   \
   do {                                                                        \
+  ` // 1 & 1 = 1; 0 & 1 = 0;
     if (((h)->flags & UV_HANDLE_ACTIVE) != 0) break;                          \
     (h)->flags |= UV_HANDLE_ACTIVE;                                           \
     if (((h)->flags & UV_HANDLE_REF) != 0) uv__active_handle_add(h);          \
