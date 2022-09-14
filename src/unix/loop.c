@@ -68,7 +68,10 @@ int uv_loop_init(uv_loop_t* loop) {
   err = uv_mutex_init(&lfields->loop_metrics.lock);
   if (err)
     goto fail_metrics_mutex_init;
-
+  // struct {                                                                    \
+  //   void* min;                                                                \
+  //   unsigned int nelts;                                                       \
+  // } timer_heap;     
   heap_init((struct heap*) &loop->timer_heap);
   QUEUE_INIT(&loop->wq);
   QUEUE_INIT(&loop->idle_handles);

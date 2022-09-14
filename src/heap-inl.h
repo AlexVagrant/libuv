@@ -39,7 +39,7 @@ struct heap_node {
  */
 struct heap {
   struct heap_node* min;
-  unsigned int nelts;
+  unsigned int nelts; //节点个数
 };
 
 /* Return non-zero if a < b. */
@@ -61,7 +61,7 @@ HEAP_EXPORT(void heap_dequeue(struct heap* heap, heap_compare_fn less_than));
 
 HEAP_EXPORT(void heap_init(struct heap* heap)) {
   heap->min = NULL;
-  heap->nelts = 0;
+  heap->nelts = 0; 
 }
 
 HEAP_EXPORT(struct heap_node* heap_min(const struct heap* heap)) {
@@ -112,14 +112,15 @@ HEAP_EXPORT(void heap_insert(struct heap* heap,
   unsigned int n;
   unsigned int k;
 
+  // 初始化新的节点
   newnode->left = NULL;
   newnode->right = NULL;
   newnode->parent = NULL;
 
   /* Calculate the path from the root to the insertion point.  This is a min
    * heap so we always insert at the left-most free node of the bottom row.
+   * 计算从根到插入点的路径。这是一个最小堆，所以我们总是从底行最左边的空闲节点插入
    */
-  path = 0;
   for (k = 0, n = 1 + heap->nelts; n >= 2; k += 1, n /= 2)
     path = (path << 1) | (n & 1);
 

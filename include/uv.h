@@ -875,6 +875,7 @@ UV_EXTERN int uv_async_send(uv_async_t* async);
  *
  * Used to get woken up at a specified time in the future.
  */
+// 最小堆 最快过期节点为根节点
 struct uv_timer_s {
   UV_HANDLE_FIELDS
   UV_TIMER_PRIVATE_FIELDS

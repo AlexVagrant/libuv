@@ -76,6 +76,7 @@ int uv_timer_start(uv_timer_t* handle,
   if (uv__is_active(handle))
     uv_timer_stop(handle);
 
+  // 超时时间
   clamped_timeout = handle->loop->time + timeout;
   if (clamped_timeout < timeout)
     clamped_timeout = (uint64_t) -1;
@@ -86,9 +87,11 @@ int uv_timer_start(uv_timer_t* handle,
   /* start_id is the second index to be compared in timer_less_than() */
   handle->start_id = handle->loop->timer_counter++;
 
+  //插入最小堆中
   heap_insert(timer_heap(handle->loop),
               (struct heap_node*) &handle->heap_node,
               timer_less_than);
+  //激活handle
   uv__handle_start(handle);
 
   return 0;
@@ -98,7 +101,7 @@ int uv_timer_start(uv_timer_t* handle,
 int uv_timer_stop(uv_timer_t* handle) {
   if (!uv__is_active(handle))
     return 0;
-
+  //从最小堆中移除超时节点
   heap_remove(timer_heap(handle->loop),
               (struct heap_node*) &handle->heap_node,
               timer_less_than);
@@ -112,6 +115,8 @@ int uv_timer_again(uv_timer_t* handle) {
   if (handle->timer_cb == NULL)
     return UV_EINVAL;
 
+  // setInterval 的实现
+  // repeat 该handle超时后，没repeat时间就会继续执行超时回调
   if (handle->repeat) {
     uv_timer_stop(handle);
     uv_timer_start(handle, handle->timer_cb, handle->repeat, handle->repeat);
@@ -159,22 +164,27 @@ int uv__next_timeout(const uv_loop_t* loop) {
   return (int) diff;
 }
 
-
+//时间循环timer阶段
 void uv__run_timers(uv_loop_t* loop) {
   struct heap_node* heap_node;
   uv_timer_t* handle;
 
   for (;;) {
+    // 获取当前最小堆根节点
+    // 这里就是为什么使用最小堆的原因，因为最小堆的根节点永远比
+    // 他的子节点小，所以如果根节点没有超时 ，后面的都不会超时
     heap_node = heap_min(timer_heap(loop));
     if (heap_node == NULL)
       break;
 
     handle = container_of(heap_node, uv_timer_t, heap_node);
+    // 如果当前节点的时间大于当前时间则返回，说明后面的节点没有超时
     if (handle->timeout > loop->time)
       break;
-
+    // 移除该计时器节点，重新插入最小堆
     uv_timer_stop(handle);
     uv_timer_again(handle);
+    // 执行回调
     handle->timer_cb(handle);
   }
 }
